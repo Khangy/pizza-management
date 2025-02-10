@@ -11,6 +11,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogContentText,
   DialogActions,
   TextField,
   Alert,
@@ -30,6 +31,14 @@ export default function ToppingsPage() {
   const [newToppingName, setNewToppingName] = useState('');
   const [formError, setFormError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [deleteError, setDeleteError] = useState<{
+    open: boolean;
+    message: string;
+    pizzas?: string[];
+  }>({
+    open: false,
+    message: '',
+  });
 
   // Load toppings on component mount
   useEffect(() => {
@@ -63,8 +72,16 @@ export default function ToppingsPage() {
       await ToppingsService.delete(id);
       setSuccessMessage('Topping deleted successfully');
       await loadToppings();
-    } catch (error) {
-      setSuccessMessage('Failed to delete topping');
+    } catch (error: any) {
+      if (error.response?.status === 400 && error.response?.data?.detail?.pizzas) {
+        setDeleteError({
+          open: true,
+          message: error.response.data.detail.message,
+          pizzas: error.response.data.detail.pizzas,
+        });
+      } else {
+        setSuccessMessage('Failed to delete topping');
+      }
     }
   };
 
@@ -75,12 +92,6 @@ export default function ToppingsPage() {
     }
 
     try {
-      const isDuplicate = await ToppingsService.checkDuplicate(newToppingName);
-      if (isDuplicate && (!editingTopping || editingTopping.name !== newToppingName)) {
-        setFormError('This topping already exists');
-        return;
-      }
-
       if (editingTopping) {
         await ToppingsService.update(editingTopping.id, newToppingName);
         setSuccessMessage('Topping updated successfully');
@@ -92,8 +103,12 @@ export default function ToppingsPage() {
       setOpen(false);
       setNewToppingName('');
       await loadToppings();
-    } catch (error) {
-      setFormError('Failed to save topping');
+    } catch (error: any) {
+      if (error.response?.status === 400) {
+        setFormError(error.response.data.detail);
+      } else {
+        setFormError('Failed to save topping');
+      }
     }
   };
 
@@ -134,7 +149,13 @@ export default function ToppingsPage() {
                 mb: 1,
               }}
             >
-              <ListItemText primary={topping.name} />
+              <ListItemText 
+                primary={topping.name}
+                secondary={topping.pizzas?.length > 0 
+                  ? `Used in ${topping.pizzas.length} pizza(s)` 
+                  : 'Not in use'
+                }
+              />
               <ListItemSecondaryAction>
                 <IconButton
                   edge="end"
@@ -147,6 +168,7 @@ export default function ToppingsPage() {
                   edge="end"
                   onClick={() => handleDeleteTopping(topping.id)}
                   color="error"
+                  disabled={topping.pizzas?.length > 0}
                 >
                   <DeleteIcon />
                 </IconButton>
@@ -183,6 +205,39 @@ export default function ToppingsPage() {
           <Button onClick={() => setOpen(false)}>Cancel</Button>
           <Button onClick={handleSave} color="primary" variant="contained">
             Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Error Dialog */}
+      <Dialog
+        open={deleteError.open}
+        onClose={() => setDeleteError({ open: false, message: '' })}
+      >
+        <DialogTitle>Cannot Delete Topping</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {deleteError.message}
+          </DialogContentText>
+          {deleteError.pizzas && deleteError.pizzas.length > 0 && (
+            <>
+              <DialogContentText sx={{ mt: 2 }}>
+                This topping is used in the following pizzas:
+              </DialogContentText>
+              <List>
+                {deleteError.pizzas.map((pizza, index) => (
+                  <ListItem key={index}>• {pizza}</ListItem>
+                ))}
+              </List>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setDeleteError({ open: false, message: '' })}
+            color="primary"
+          >
+            Close
           </Button>
         </DialogActions>
       </Dialog>

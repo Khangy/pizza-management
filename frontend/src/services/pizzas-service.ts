@@ -1,108 +1,68 @@
-import { mockPizzas, mockToppings } from './mock-data';
+import api from './api-config';
 import type { Pizza } from '../types';
-
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Helper function to check if two arrays have the same elements
-const areArraysEqual = (arr1: number[], arr2: number[]) => {
-  if (arr1.length !== arr2.length) return false;
-  const sorted1 = [...arr1].sort();
-  const sorted2 = [...arr2].sort();
-  return sorted1.every((value, index) => value === sorted2[index]);
-};
 
 export const PizzasService = {
   getAll: async (): Promise<Pizza[]> => {
-    await delay(500);
-    return [...mockPizzas];
+    const response = await api.get('/pizzas');
+    return response.data;
   },
 
   getById: async (id: number): Promise<Pizza> => {
-    await delay(500);
-    const pizza = mockPizzas.find(p => p.id === id);
-    if (!pizza) throw new Error('Pizza not found');
-    return { ...pizza };
-  },
-
-  checkDuplicate: async (name: string, toppingIds: number[], currentPizzaId?: number): Promise<{
-    isDuplicate: boolean;
-    reason?: 'name' | 'toppings';
-  }> => {
-    await delay(500);
-    
-    // Check for duplicate name
-    const nameExists = mockPizzas.some(p => 
-      p.id !== currentPizzaId && 
-      p.name.toLowerCase() === name.toLowerCase()
-    );
-    if (nameExists) {
-      return { isDuplicate: true, reason: 'name' };
-    }
-
-    // Check for duplicate topping combination
-    const toppingCombinationExists = mockPizzas.some(p => {
-      if (p.id === currentPizzaId) return false;
-      const pizzaToppingIds = p.toppings.map(t => t.id);
-      return areArraysEqual(pizzaToppingIds, toppingIds);
-    });
-
-    if (toppingCombinationExists) {
-      return { isDuplicate: true, reason: 'toppings' };
-    }
-
-    return { isDuplicate: false };
+    const response = await api.get(`/pizzas/${id}`);
+    return response.data;
   },
 
   create: async (data: { name: string; toppingIds: number[] }): Promise<Pizza> => {
-    await delay(500);
-    
-    // Check for duplicates before creating
-    const { isDuplicate, reason } = await PizzasService.checkDuplicate(data.name, data.toppingIds);
-    if (isDuplicate) {
-      throw new Error(
-        reason === 'name' 
-          ? 'A pizza with this name already exists' 
-          : 'A pizza with this combination of toppings already exists'
-      );
-    }
-
-    const newPizza: Pizza = {
-      id: Math.max(...mockPizzas.map(p => p.id)) + 1,
+    const response = await api.post('/pizzas', {
       name: data.name,
-      toppings: mockToppings.filter(t => data.toppingIds.includes(t.id)),
-    };
-    mockPizzas.push(newPizza);
-    return { ...newPizza };
+      topping_ids: data.toppingIds // Note: backend expects snake_case
+    });
+    return response.data;
   },
 
   update: async (id: number, data: { name: string; toppingIds: number[] }): Promise<Pizza> => {
-    await delay(500);
-    
-    // Check for duplicates before updating
-    const { isDuplicate, reason } = await PizzasService.checkDuplicate(data.name, data.toppingIds, id);
-    if (isDuplicate) {
-      throw new Error(
-        reason === 'name' 
-          ? 'A pizza with this name already exists' 
-          : 'A pizza with this combination of toppings already exists'
-      );
-    }
-
-    const index = mockPizzas.findIndex(p => p.id === id);
-    if (index === -1) throw new Error('Pizza not found');
-    
-    mockPizzas[index] = {
-      ...mockPizzas[index],
+    const response = await api.put(`/pizzas/${id}`, {
       name: data.name,
-      toppings: mockToppings.filter(t => data.toppingIds.includes(t.id)),
-    };
-    return { ...mockPizzas[index] };
+      topping_ids: data.toppingIds // Note: backend expects snake_case
+    });
+    return response.data;
   },
 
   delete: async (id: number): Promise<void> => {
-    await delay(500);
-    const index = mockPizzas.findIndex(p => p.id === id);
-    if (index === -1) throw new Error('Pizza not found');
-    mockPizzas.splice(index, 1);
-  }
+    await api.delete(`/pizzas/${id}`);
+  },
+
+  checkDuplicate: async (name: string, toppingIds: number[]): Promise<{
+    isDuplicate: boolean;
+    reason?: 'name' | 'toppings';
+  }> => {
+    try {
+      const response = await api.get('/pizzas');
+      const pizzas = response.data as Pizza[];
+      
+      // Check name duplicate
+      const nameExists = pizzas.some(p => 
+        p.name.toLowerCase() === name.toLowerCase()
+      );
+      if (nameExists) {
+        return { isDuplicate: true, reason: 'name' };
+      }
+
+      // Check toppings duplicate
+      const toppingCombinationExists = pizzas.some(pizza => {
+        const pizzaToppingIds = pizza.toppings.map(t => t.id);
+        return JSON.stringify([...pizzaToppingIds].sort()) === 
+               JSON.stringify([...toppingIds].sort());
+      });
+
+      if (toppingCombinationExists) {
+        return { isDuplicate: true, reason: 'toppings' };
+      }
+
+      return { isDuplicate: false };
+    } catch (error) {
+      console.error('Error checking duplicate pizza:', error);
+      return { isDuplicate: false };
+    }
+  },
 };

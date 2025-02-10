@@ -1,49 +1,41 @@
-import { mockToppings } from './mock-data';
+import api from './api-config';
 import type { Topping } from '../types';
-
-// Helper to simulate API delay
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const ToppingsService = {
   getAll: async (): Promise<Topping[]> => {
-    await delay(500); // Simulate network delay
-    return [...mockToppings];
+    const response = await api.get('/toppings');
+    return response.data;
   },
 
   getById: async (id: number): Promise<Topping> => {
-    await delay(500);
-    const topping = mockToppings.find(t => t.id === id);
-    if (!topping) throw new Error('Topping not found');
-    return { ...topping };
+    const response = await api.get(`/toppings/${id}`);
+    return response.data;
   },
 
   create: async (name: string): Promise<Topping> => {
-    await delay(500);
-    const newTopping: Topping = {
-      id: Math.max(...mockToppings.map(t => t.id)) + 1,
-      name,
-    };
-    mockToppings.push(newTopping);
-    return { ...newTopping };
+    const response = await api.post('/toppings', { name });
+    return response.data;
   },
 
   update: async (id: number, name: string): Promise<Topping> => {
-    await delay(500);
-    const index = mockToppings.findIndex(t => t.id === id);
-    if (index === -1) throw new Error('Topping not found');
-    mockToppings[index] = { ...mockToppings[index], name };
-    return { ...mockToppings[index] };
+    const response = await api.put(`/toppings/${id}`, { name });
+    return response.data;
   },
 
   delete: async (id: number): Promise<void> => {
-    await delay(500);
-    const index = mockToppings.findIndex(t => t.id === id);
-    if (index === -1) throw new Error('Topping not found');
-    mockToppings.splice(index, 1);
+    await api.delete(`/toppings/${id}`);
   },
 
   checkDuplicate: async (name: string): Promise<boolean> => {
-    await delay(500);
-    return mockToppings.some(t => t.name.toLowerCase() === name.toLowerCase());
+    try {
+      const response = await api.get(`/toppings`);
+      const toppings = response.data as Topping[];
+      return toppings.some(t => 
+        t.name.toLowerCase() === name.toLowerCase()
+      );
+    } catch (error) {
+      console.error('Error checking duplicate topping:', error);
+      return false;
+    }
   },
 };
