@@ -39,6 +39,15 @@ export default function ToppingsPage() {
     open: false,
     message: '',
   });
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    open: boolean;
+    toppingId: number | null;
+    toppingName: string;
+  }>({
+    open: false,
+    toppingId: null,
+    toppingName: '',
+  });
 
   // Load toppings on component mount
   useEffect(() => {
@@ -67,22 +76,33 @@ export default function ToppingsPage() {
     setFormError('');
   };
 
-  const handleDeleteTopping = async (id: number) => {
-    try {
-      await ToppingsService.delete(id);
-      setSuccessMessage('Topping deleted successfully');
-      await loadToppings();
-    } catch (error: any) {
-      if (error.response?.status === 400 && error.response?.data?.detail?.pizzas) {
-        setDeleteError({
-          open: true,
-          message: error.response.data.detail.message,
-          pizzas: error.response.data.detail.pizzas,
-        });
-      } else {
-        setSuccessMessage('Failed to delete topping');
+  const handleDeleteClick = (topping: Topping) => {
+    setDeleteConfirmation({
+      open: true,
+      toppingId: topping.id,
+      toppingName: topping.name,
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (deleteConfirmation.toppingId) {
+      try {
+        await ToppingsService.delete(deleteConfirmation.toppingId);
+        setSuccessMessage('Topping deleted successfully');
+        await loadToppings();
+      } catch (error: any) {
+        if (error.response?.status === 400 && error.response?.data?.detail?.pizzas) {
+          setDeleteError({
+            open: true,
+            message: error.response.data.detail.message,
+            pizzas: error.response.data.detail.pizzas,
+          });
+        } else {
+          setSuccessMessage('Failed to delete topping');
+        }
       }
     }
+    setDeleteConfirmation({ open: false, toppingId: null, toppingName: '' });
   };
 
   const handleSave = async () => {
@@ -166,7 +186,7 @@ export default function ToppingsPage() {
                 </IconButton>
                 <IconButton
                   edge="end"
-                  onClick={() => handleDeleteTopping(topping.id)}
+                  onClick={() => handleDeleteClick(topping)}
                   color="error"
                   disabled={topping.pizzas?.length > 0}
                 >
@@ -238,6 +258,34 @@ export default function ToppingsPage() {
             color="primary"
           >
             Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmation.open}
+        onClose={() => setDeleteConfirmation({ open: false, toppingId: null, toppingName: '' })}
+      >
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete the topping "{deleteConfirmation.toppingName}"? 
+            This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setDeleteConfirmation({ open: false, toppingId: null, toppingName: '' })}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleDeleteConfirm} 
+            color="error" 
+            variant="contained"
+          >
+            Delete
           </Button>
         </DialogActions>
       </Dialog>

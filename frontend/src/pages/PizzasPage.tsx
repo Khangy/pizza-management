@@ -10,6 +10,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogContentText,
   DialogActions,
   TextField,
   FormControl,
@@ -17,10 +18,10 @@ import {
   Select,
   MenuItem,
   Chip,
+  Box,
   Alert,
   CircularProgress,
   Snackbar,
-  Box,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { PizzasService } from '../services/pizzas-service';
@@ -39,6 +40,15 @@ export default function PizzasPage() {
   const [selectedToppings, setSelectedToppings] = useState<number[]>([]);
   const [formError, setFormError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    open: boolean;
+    pizzaId: number | null;
+    pizzaName: string;
+  }>({
+    open: false,
+    pizzaId: null,
+    pizzaName: '',
+  });
 
   // Load data on component mount
   useEffect(() => {
@@ -78,14 +88,25 @@ export default function PizzasPage() {
     setFormError('');
   };
 
-  const handleDeletePizza = async (id: number) => {
-    try {
-      await PizzasService.delete(id);
-      setSuccessMessage('Pizza deleted successfully');
-      await loadPizzas();
-    } catch (error) {
-      setSuccessMessage('Failed to delete pizza');
+  const handleDeleteClick = (pizza: Pizza) => {
+    setDeleteConfirmation({
+      open: true,
+      pizzaId: pizza.id,
+      pizzaName: pizza.name,
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (deleteConfirmation.pizzaId) {
+      try {
+        await PizzasService.delete(deleteConfirmation.pizzaId);
+        setSuccessMessage('Pizza deleted successfully');
+        await loadPizzas();
+      } catch (error) {
+        setSuccessMessage('Failed to delete pizza');
+      }
     }
+    setDeleteConfirmation({ open: false, pizzaId: null, pizzaName: '' });
   };
 
   const handleSave = async () => {
@@ -93,33 +114,18 @@ export default function PizzasPage() {
       setFormError('Pizza name is required');
       return;
     }
-  
+
     if (selectedToppings.length === 0) {
       setFormError('Please select at least one topping');
       return;
     }
-  
+
     try {
-      const { isDuplicate, reason } = await PizzasService.checkDuplicate(
-        newPizzaName, 
-        selectedToppings,
-        editingPizza?.id
-      );
-  
-      if (isDuplicate) {
-        setFormError(
-          reason === 'name'
-            ? 'A pizza with this name already exists'
-            : 'A pizza with this combination of toppings already exists'
-        );
-        return;
-      }
-  
       const data = {
         name: newPizzaName,
         toppingIds: selectedToppings,
       };
-  
+
       if (editingPizza) {
         await PizzasService.update(editingPizza.id, data);
         setSuccessMessage('Pizza updated successfully');
@@ -127,14 +133,14 @@ export default function PizzasPage() {
         await PizzasService.create(data);
         setSuccessMessage('Pizza created successfully');
       }
-  
+
       setOpen(false);
       setNewPizzaName('');
       setSelectedToppings([]);
       await loadPizzas();
-    } catch (error) {
-      if (error instanceof Error) {
-        setFormError(error.message);
+    } catch (error: any) {
+      if (error.response?.status === 400) {
+        setFormError(error.response.data.detail);
       } else {
         setFormError('Failed to save pizza');
       }
@@ -202,7 +208,7 @@ export default function PizzasPage() {
                     size="small"
                     color="error"
                     startIcon={<DeleteIcon />}
-                    onClick={() => handleDeletePizza(pizza.id)}
+                    onClick={() => handleDeleteClick(pizza)}
                   >
                     Delete
                   </Button>
@@ -235,41 +241,66 @@ export default function PizzasPage() {
             helperText={formError}
             sx={{ mb: 2 }}
           />
-          <FormControl 
-            fullWidth 
-            error={!!formError && selectedToppings.length === 0}
-            sx={{ mt: 2 }} // Add margin top for spacing
->
+          <FormControl fullWidth error={!!formError && selectedToppings.length === 0}>
             <InputLabel id="toppings-label">Toppings</InputLabel>
             <Select
-            labelId="toppings-label"
-            multiple
-            value={selectedToppings}
-            onChange={(e) => setSelectedToppings(e.target.value as number[])}
-            label="Toppings" // Add this line
-            renderValue={(selected) => (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                {selected.map((value) => (
-            <Chip
-            key={value}
-            label={toppings?.find(t => t.id === value)?.name}
-            size="small"
-            />
-         ))}
-      </Box>
-    )}
-        >{toppings?.map((topping) => (
-            <MenuItem key={topping.id} value={topping.id}>
-            {topping.name}
-            </MenuItem>
-            ))}
-        </Select>
-        </FormControl>
+              labelId="toppings-label"
+              multiple
+              value={selectedToppings}
+              onChange={(e) => setSelectedToppings(e.target.value as number[])}
+              label="Toppings"
+              renderValue={(selected) => (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {selected.map((value) => (
+                    <Chip
+                      key={value}
+                      label={toppings?.find(t => t.id === value)?.name}
+                      size="small"
+                    />
+                  ))}
+                </Box>
+              )}
+            >
+              {toppings?.map((topping) => (
+                <MenuItem key={topping.id} value={topping.id}>
+                  {topping.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Cancel</Button>
           <Button onClick={handleSave} color="primary" variant="contained">
             Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmation.open}
+        onClose={() => setDeleteConfirmation({ open: false, pizzaId: null, pizzaName: '' })}
+      >
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete the pizza "{deleteConfirmation.pizzaName}"? 
+            This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setDeleteConfirmation({ open: false, pizzaId: null, pizzaName: '' })}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleDeleteConfirm} 
+            color="error" 
+            variant="contained"
+          >
+            Delete
           </Button>
         </DialogActions>
       </Dialog>
