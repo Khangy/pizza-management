@@ -93,24 +93,33 @@ export default function PizzasPage() {
       setFormError('Pizza name is required');
       return;
     }
-
+  
     if (selectedToppings.length === 0) {
       setFormError('Please select at least one topping');
       return;
     }
-
+  
     try {
-      const isDuplicate = await PizzasService.checkDuplicate(newPizzaName);
-      if (isDuplicate && (!editingPizza || editingPizza.name !== newPizzaName)) {
-        setFormError('This pizza name already exists');
+      const { isDuplicate, reason } = await PizzasService.checkDuplicate(
+        newPizzaName, 
+        selectedToppings,
+        editingPizza?.id
+      );
+  
+      if (isDuplicate) {
+        setFormError(
+          reason === 'name'
+            ? 'A pizza with this name already exists'
+            : 'A pizza with this combination of toppings already exists'
+        );
         return;
       }
-
+  
       const data = {
         name: newPizzaName,
         toppingIds: selectedToppings,
       };
-
+  
       if (editingPizza) {
         await PizzasService.update(editingPizza.id, data);
         setSuccessMessage('Pizza updated successfully');
@@ -118,13 +127,17 @@ export default function PizzasPage() {
         await PizzasService.create(data);
         setSuccessMessage('Pizza created successfully');
       }
-
+  
       setOpen(false);
       setNewPizzaName('');
       setSelectedToppings([]);
       await loadPizzas();
     } catch (error) {
-      setFormError('Failed to save pizza');
+      if (error instanceof Error) {
+        setFormError(error.message);
+      } else {
+        setFormError('Failed to save pizza');
+      }
     }
   };
 
