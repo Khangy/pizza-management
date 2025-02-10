@@ -201,6 +201,7 @@ export default function PizzasPage() {
                     size="small"
                     startIcon={<EditIcon />}
                     onClick={() => handleEditPizza(pizza)}
+                    data-testid={`edit-button-${pizza.id}`}
                   >
                     Edit
                   </Button>
@@ -209,6 +210,7 @@ export default function PizzasPage() {
                     color="error"
                     startIcon={<DeleteIcon />}
                     onClick={() => handleDeleteClick(pizza)}
+                    data-testid={`delete-button-${pizza.id}`}
                   >
                     Delete
                   </Button>

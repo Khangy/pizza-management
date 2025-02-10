@@ -181,6 +181,7 @@ export default function ToppingsPage() {
                   edge="end"
                   onClick={() => handleEditTopping(topping)}
                   sx={{ mr: 1 }}
+                  data-testid={`edit-button-${topping.id}`}
                 >
                   <EditIcon />
                 </IconButton>
@@ -189,6 +190,7 @@ export default function ToppingsPage() {
                   onClick={() => handleDeleteClick(topping)}
                   color="error"
                   disabled={topping.pizzas?.length > 0}
+                  data-testid={`delete-button-${topping.id}`}
                 >
                   <DeleteIcon />
                 </IconButton>
