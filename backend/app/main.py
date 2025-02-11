@@ -16,7 +16,7 @@ app = FastAPI(title="Pizza Management API")
 # Get allowed origins from environment variable or use defaults
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
-    "https://pizza-management-jade.vercel.app"
+    "https://pizza-management-production.up.railway.app"
 ).split(",")
 
 logger.info(f"Allowed origins: {ALLOWED_ORIGINS}")
