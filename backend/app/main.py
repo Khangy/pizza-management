@@ -19,12 +19,10 @@ ALLOWED_ORIGINS = [
 # Configure CORS with explicit origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_origins=["*"],  # Allow all origins temporarily
+    allow_credentials=False,  # Set to False when using allow_origins=["*"]
+    allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"],
-    max_age=3600,
 )
 
 # Include routers
