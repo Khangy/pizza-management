@@ -14,12 +14,18 @@ load_dotenv()
 # Get Database URL from environment variable
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+if not DATABASE_URL:
+    logger.error("No DATABASE_URL environment variable found!")
+    raise ValueError("DATABASE_URL environment variable is required")
+
+logger.info("Database URL found")
+
 # Handle special case for PostgreSQL URLs from Railway
-if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 try:
-    logger.info(f"Connecting to database... {DATABASE_URL[:20]}...")
+    logger.info("Attempting to connect to database...")
     engine = create_engine(DATABASE_URL)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base = declarative_base()
