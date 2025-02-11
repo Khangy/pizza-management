@@ -14,5 +14,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy backend code
 COPY backend/ .
 
+# Create start script
+RUN echo "#!/bin/bash\nuvicorn app.main:app --host 0.0.0.0 --port \$PORT" > start.sh && \
+    chmod +x start.sh
+
 # Command to run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "$PORT"]
+CMD ["./start.sh"]
