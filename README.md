@@ -37,7 +37,6 @@ This application allows pizza store owners to manage their pizza menu by:
 ### Backend Setup
 
 1. Clone the repository:
-```bash
 git clone <repository-url>
 cd pizza-management
 cd backend
@@ -92,7 +91,6 @@ npm run dev
 The frontend uses Vitest and React Testing Library for testing. Tests cover component rendering, user interactions, and service functionality.
 
 1. Navigate to frontend directory:
-```bash
 cd frontend
 2. Run tests:
 npm test
