@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const baseURL = import.meta.env.VITE_API_URL || 'pizza-management-production.up.railway.app/api';
+const baseURL = import.meta.env.VITE_API_URL || 'https://pizza-management-production.up.railway.app/api';
 
 const api = axios.create({
   baseURL,
