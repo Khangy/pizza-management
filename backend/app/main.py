@@ -8,19 +8,11 @@ load_dotenv()
 
 app = FastAPI(title="Pizza Management API")
 
-# Explicitly list all allowed origins
-ALLOWED_ORIGINS = [
-    "https://pizza-management-jade.vercel.app",  # Your Vercel domain
-    "https://pizza-management-jade.vercel.app/",  # With trailing slash
-    "http://localhost:3000",
-    "http://localhost:5173"
-]
-
-# Configure CORS with explicit origins
+# Most permissive CORS configuration for debugging
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins temporarily
-    allow_credentials=False,  # Set to False when using allow_origins=["*"]
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=False,  # Must be False when allow_origins=["*"]
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -34,14 +26,11 @@ async def root():
     return {
         "message": "Welcome to Pizza Management API",
         "docs": "/docs",
-        "version": "1.0.0",
-        "allowed_origins": ALLOWED_ORIGINS  # Add this to debug
+        "version": "1.0.0"
     }
 
 @app.get("/health")
 async def health_check():
     return {
-        "status": "healthy",
-        "allowed_origins": ALLOWED_ORIGINS,  # Add this to debug
-        "environment": os.getenv("ENVIRONMENT", "production")
+        "status": "healthy"
     }
