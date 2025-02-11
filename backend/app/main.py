@@ -14,10 +14,11 @@ load_dotenv()
 app = FastAPI(title="Pizza Management API")
 
 # Get allowed origins from environment variable or use defaults
-ALLOWED_ORIGINS = os.getenv(
-    "ALLOWED_ORIGINS",
-    "https://pizza-management-production.up.railway.app"
-).split(",")
+ALLOWED_ORIGINS = [
+    "https://pizza-management-jade.vercel.app",  # Your Vercel frontend URL
+    "http://localhost:3000",  # Local development
+    "http://localhost:5173",  # Vite dev server
+]
 
 logger.info(f"Allowed origins: {ALLOWED_ORIGINS}")
 
