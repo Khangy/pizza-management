@@ -1,8 +1,10 @@
 import axios from 'axios';
 
+// Force HTTPS
 const baseURL = 'https://pizza-management-production.up.railway.app/api';
 
-console.log('API Base URL:', baseURL)
+// Add logging to debug the URL
+console.log('API Base URL being used:', baseURL);
 
 const api = axios.create({
   baseURL,
@@ -11,12 +13,14 @@ const api = axios.create({
   },
 });
 
-// Add response interceptor for error handling
-api.interceptors.response.use(
-  (response) => response,
+// Add request interceptor to log the full URL
+api.interceptors.request.use(
+  (config) => {
+    console.log('Full request URL:', config.url);
+    console.log('Base URL being used:', config.baseURL);
+    return config;
+  },
   (error) => {
-    // Handle errors here (e.g., show toast notifications)
-    console.error('API Error:', error.response?.data || error.message);
     return Promise.reject(error);
   }
 );
