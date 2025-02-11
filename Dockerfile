@@ -14,12 +14,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy backend code
 COPY backend/ .
 
-# Create start script with proper PORT handling
-RUN echo '#!/bin/bash\n\
-PORT="${PORT:-8000}"\n\
-echo "Starting server on port: $PORT"\n\
-uvicorn app.main:app --host 0.0.0.0 --port "$PORT"' > start.sh && \
-    chmod +x start.sh
+# Set default port
+ENV PORT=8000
 
 # Command to run the application
-CMD ["./start.sh"]
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
